@@ -1,45 +1,135 @@
-import "./App.css";
-import Navbar from "./components/Navbar/Navbar";
-import Hero from "./components/Hero/Hero";
-//import Card from "./components/Card/Card";
 import { useEffect, useState } from "react";
-import { fetchTopAlbums, fetchNewAlbums } from "./api/api";
+import styles from "./App.css";
+import Hero from "./components/Hero/Hero";
+import Navbar from "./components/Navbar/Navbar";
+import { fetchNewAlbums, fetchSongs, fetchTopAlbums } from "./api/api";
 import Section from "./components/Section/Section";
 
+import Accordion from "./components/Accordion/Accordion";
+// import Player from "./components/Player/Player";
+
 function App() {
-  const [topAlbumsData, setTopAlbumsData] = useState([]);
+  const [data, setData] = useState([]);
+  const [topAlbumsData, setAlbumsData] = useState([]);
+  const [NewAlbumsData, setNewAlbumsData] = useState([]);
+  const [songsData, setSongsData] = useState([]);
+  const [filteredDataValue, setFilteredDataValue] = useState([]);
+  const [value, setValue] = useState(0);
 
-  const generateTopAlbumbsData = async () => {
-    const data = await fetchTopAlbums();
-    setTopAlbumsData(data);
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
   };
 
+  const generateSongsData = (value) => {
+    let key;
+    if (value === 0) {
+      filteredData(songsData);
+      return;
+    } else if (value === 1) {
+      key = "rock";
+    } else if (value === 2) {
+      key = "pop";
+    } else if (value === 3) {
+      key = "jazz";
+    } else if (value === 4) {
+      key = "blues";
+    }
+    const res = songsData.filter((item) => item.genre.key === key);
+    filteredData(res);
+  };
   useEffect(() => {
-    generateTopAlbumbsData();
-  }, []);
+    generateSongsData(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
-  const [newAlbumsData, setNewAlbumsData] = useState([]);
-
-  const generateNewAlbumbsData = async () => {
-    const data = await fetchNewAlbums();
-    setNewAlbumsData(data);
+  const generateTopAlbumsData = async () => {
+    try {
+      const data = await fetchTopAlbums();
+      setAlbumsData(data);
+      setData((prevData) => [...prevData, ...data]);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
+  const generateNewAlbumsData = async () => {
+    try {
+      const data = await fetchNewAlbums();
+      setNewAlbumsData(data);
+      setData((prevData) => [...prevData, ...data]);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const generateAllSongsData = async () => {
+    try {
+      const data = await fetchSongs();
+      setSongsData(data);
+      setFilteredDataValue(data);
+      setData((prevData) => [...prevData, ...data]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const filteredData = (val) => {
+    setFilteredDataValue(val);
+  };
   useEffect(() => {
-    generateNewAlbumbsData();
+    generateTopAlbumsData();
+    generateNewAlbumsData();
+    generateAllSongsData();
   }, []);
   return (
     <div>
-      <Navbar />
+      <Navbar data={data} />
       <Hero />
-      {/* { {topAlbumsData.map((item) => {
-        return <Card data={item} type="album" key={item.title} />;
-      })} } */}
-      <div>
-        <Section data={topAlbumsData} type="album" title="Top Albums" />
-        <Section data={newAlbumsData} type="album" title="New Albums" />
-        {/*<Section data={topAlbumsData} type="album" title="Songs" />*/}
+      <div className={styles.sectionWrapper}>
+        <Section
+          data={topAlbumsData}
+          type="album"
+          title="Top Albums"
+          filteredDataValues={data}
+        />
+        <Section
+          data={NewAlbumsData}
+          type="album"
+          title="New Albums"
+          filteredDataValues={data}
+        />
+        <hr
+          className={styles.line}
+          style={{
+            borderColor: "var(--color-primary)",
+            borderWidth: "2px",
+            borderStyle: "solid",
+          }}
+        />
+
+        <Section
+          data={songsData}
+          type="song"
+          title="Songs"
+          filteredData={filteredData}
+          filteredDatavalues={filteredDataValue}
+          value={value}
+          handleChange={handleChange}
+        />
+        <hr
+          className={styles.line}
+          style={{
+            borderColor: "var(--color-primary)",
+            borderWidth: "2px",
+            borderStyle: "solid",
+          }}
+        />
       </div>
+      <div>
+        <Accordion />
+      </div>
+
+      {/* <hr className={styles.player__horizontal}/>
+      <Player /> */}
     </div>
   );
 }
